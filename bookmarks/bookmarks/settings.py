@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "social_django",
     "django_extensions",
+    "images.apps.ImagesConfig",
+    "easy_thumbnails",
 ]
 
 MIDDLEWARE = [
@@ -162,3 +164,15 @@ SOCIAL_AUTH_PIPELINE = [
     "social_core.pipeline.social_auth.load_extra_data",
     "social_core.pipeline.user.user_details",
 ]
+
+# for vpn users and to stop toggling VPN on and off
+import sys
+
+# This automatically switches between HTTP and HTTPS based on your server command
+if "runserver_plus" in sys.argv:
+    SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
+else:
+    SOCIAL_AUTH_REDIRECT_IS_HTTPS = False
+
+# This tells Django to trust the 'secure' signal from your VPN or Proxy
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

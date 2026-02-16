@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from django.shortcuts import render
 from .forms import LoginForm, UserRegistrationForm, UserEditForm, ProfileEditForm
 from .models import Profile
+from images.models import Image
 
 
 def user_login(request):
@@ -30,7 +31,13 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
-    return render(request, "account/dashboard.html", {"section": "dashboard"})
+    # Count the images bookmarked by the current user
+    total_images_created = Image.objects.filter(user=request.user).count()
+    return render(
+        request,
+        "account/dashboard.html",
+        {"section": "dashboard", "total_images_created": 99},
+    )
 
 
 def register(request):
