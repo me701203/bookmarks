@@ -17,7 +17,7 @@
                 <a href="{% url "images:list" %}">Images</a>
                 </li>
                 <li {% if section == "people" %}class="selected"{% endif%}>
-                    <a href="#">People</a>
+                    <a href="{% url "user_list" %}">People</a>
                 </li>
             </ul>
         {% endif %}
@@ -36,7 +36,7 @@
     {% if messages %}
         <ul class="messages">
             {% for message in messages%}
-                <li class="{{ message.tages }}">
+                <li class="{{ message.tags }}">
                     {{ message|safe }}
                     <a href="#" class="close">x</a>
                 </li>
