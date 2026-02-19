@@ -4,9 +4,11 @@ from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404, render
+from actions.models import Action
+from actions.utils import create_action
+from images.models import Image
 from .forms import LoginForm, UserRegistrationForm, UserEditForm, ProfileEditForm
 from .models import Contact, Profile
-from images.models import Image
 
 
 def user_login(request):
@@ -32,29 +34,17 @@ def user_login(request):
 
 @login_required
 def dashboard(request):
-    # Count the images bookmarked by the current user
-    total_images_created = Image.objects.filter(user=request.user).count()
+    # Display all actions by default
+    actions = Action.objects.exclude(user=request.user)
+    following_ids = request.user.following.values_list("id", flat=True)
+    if following_ids:
+        # If user is following others, retrieve only their actions
+        actions = actions.select_related("user", "user__profile").prefetch_related(
+            "target"
+        )[:10]
     return render(
-        request,
-        "account/dashboard.html",
-        {"section": "dashboard", "total_images_created": 99},
+        request, "account/dashboard.html", {"section": "dashboard", "actions": actions}
     )
-
-
-def register(request):
-    if request.method == "POST":
-        user_form = UserRegistrationForm(request.POST)
-        if user_form.is_valid():
-            # Create a new user object but avoid saving it yet
-            new_user = user_form.save(commit=False)
-            # Set the chosen password
-            new_user.set_password(user_form.cleaned_data["password"])
-            # Save the User object
-            new_user.save()
-            return render(request, "account/register_done.html", {"new_user": new_user})
-    else:
-        user_form = UserRegistrationForm()
-    return render(request, "account/register.html", {"user_form": user_form})
 
 
 def register(request):
@@ -69,6 +59,7 @@ def register(request):
             new_user.save()
             # Create the user profile
             Profile.objects.create(user=new_user)
+            create_action(new_user, "has created an account")
         return render(request, "account/register_done.html", {"new_user": new_user})
     else:
         user_form = UserRegistrationForm()
@@ -129,6 +120,7 @@ def user_follow(request):
             user = User.objects.get(id=user_id)
             if action == "follow":
                 Contact.objects.get_or_create(user_from=request.user, user_to=user)
+                create_action(request.user, "is following", user)
             else:
                 Contact.objects.filter(user_from=request.user, user_to=user).delete()
             return JsonResponse({"status": "ok"})
